@@ -1,17 +1,16 @@
-from transformers import pipeline
+from huggingface_hub import InferenceClient
 from news.models import Category
+from decouple import config
 
-# Load Hugging Face pipeline once at import time
-classifier = pipeline("zero-shot-classification",
-                      model="facebook/bart-large-mnli")
+client = InferenceClient(
+    model="facebook/bart-large-mnli",
+    api_key=config("HUGGINGFACE_TOKEN")
+)
 
 
 def nlp_categorize(text: str, threshold: float = 0.7, single: bool = False):
     """
-    Categorize text dynamically using DB categories as candidate labels.
-
-    - If single=True → return the best category.
-    - If single=False → return all categories with score >= threshold.
+    Categorize text dynamically using DB categories via the Hugging Face Inference API.
     """
     if not text:
         return None if single else []
@@ -21,11 +20,16 @@ def nlp_categorize(text: str, threshold: float = 0.7, single: bool = False):
     if not candidate_categories:
         return None if single else []
 
-    result = classifier(
-        text,
-        candidate_labels=candidate_categories,
-        multi_label=not single  # single=False → pick one, else multi
-    )
+    # Use the client's zero-shot classification method
+    try:
+        result = client.zero_shot_classification(
+            sequence=text,
+            candidate_labels=candidate_categories,
+            multi_label=not single
+        )
+    except Exception as e:
+        print(f"Error during API call: {e}")
+        return None if single else []
 
     if single:
         return result["labels"][0] if result["labels"] else None
