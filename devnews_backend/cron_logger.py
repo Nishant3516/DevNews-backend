@@ -1,6 +1,9 @@
 import os
 import logging
-from .settings import BASE_DIR
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+print(BASE_DIR)
 
 
 class InfoFilter(logging.Filter):

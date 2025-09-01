@@ -58,6 +58,7 @@ class TaggedNews(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     summary = models.TextField(blank=True, null=True)
+    likes = models.IntegerField(default=0)
 
     tags = models.ManyToManyField(
         Tag, through="TaggedNewsTags", related_name="tagged_news")

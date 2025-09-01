@@ -6,25 +6,29 @@ classifier = pipeline("zero-shot-classification",
                       model="facebook/bart-large-mnli")
 
 
-def nlp_categorize(text: str, threshold: float = 0.7):
+def nlp_categorize(text: str, threshold: float = 0.7, single: bool = False):
     """
     Categorize text dynamically using DB categories as candidate labels.
-    Falls back to empty list if no categories exist.
+
+    - If single=True → return the best category.
+    - If single=False → return all categories with score >= threshold.
     """
     if not text:
-        return []
+        return None if single else []
 
-    # Pull candidate categories dynamically from DB
     candidate_categories = list(
         Category.objects.values_list("name", flat=True))
     if not candidate_categories:
-        return []
+        return None if single else []
 
     result = classifier(
         text,
         candidate_labels=candidate_categories,
-        multi_label=True
+        multi_label=not single  # single=False → pick one, else multi
     )
+
+    if single:
+        return result["labels"][0] if result["labels"] else None
 
     labels = []
     for label, score in zip(result["labels"], result["scores"]):

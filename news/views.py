@@ -25,17 +25,13 @@ def get_news(request):
     return Response(serializer.data)
 
 
-# instance 1 - normal User
-# models
-# fetch_news
-# process_news - filter query
+@api_view(['POST'])
+def toggle_like_news(request, news_id):
+    news = TaggedNews.objects.get(id=news_id)
 
-# instance 2- cron jobs 1
-# news=fetch_news
-# process_news(news) - summary()
-# process_blog(blog) - summary()
+    if not news:
+        return Response({"error": "News not found"}, status=404)
 
-
-# cron job 2
-# news=blog
-# process_blog(news) - summary()
+    news.likes += 1
+    news.save()
+    return Response({"success": True, "likes": news.likes})
