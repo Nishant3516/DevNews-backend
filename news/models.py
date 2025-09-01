@@ -1,5 +1,6 @@
 from django.db import models
 from category.models import Category, Tag
+from django.utils.text import slugify
 
 
 class Source(models.Model):
@@ -35,6 +36,15 @@ class RawNews(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default="raw")
     img_url = models.URLField(blank=True, null=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def get_app_url(self):
+        return f"https://myapp.com/news/{self.slug}/"
 
     def __str__(self):
         return self.title

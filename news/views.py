@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from news.models import TaggedNews
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -35,3 +35,9 @@ def toggle_like_news(request, news_id):
     news.likes += 1
     news.save()
     return Response({"success": True, "likes": news.likes})
+
+
+@api_view(['GET'])
+def fetch_news_by_slug(request, slug):
+    news = get_object_or_404(TaggedNews, slug=slug)
+    return Response({"success": True, "news": news})
