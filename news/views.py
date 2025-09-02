@@ -39,5 +39,6 @@ def toggle_like_news(request, news_id):
 
 @api_view(['GET'])
 def fetch_news_by_slug(request, slug):
-    news = get_object_or_404(TaggedNews, slug=slug)
-    return Response({"success": True, "news": news})
+    news = get_object_or_404(TaggedNews, raw_news__slug=slug)
+    serializer = TaggedNewsSerializer(news, many=False)
+    return Response({"success": True, "news": serializer.data})
