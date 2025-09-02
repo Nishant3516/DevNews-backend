@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from news.models import TaggedNews
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from news.serializers import TaggedNewsSerializer
+from news.serializers import TaggedNewsSerializer, TaggedNewsMetaSerializer
 
 # Create your views here.
 
@@ -39,6 +39,27 @@ def toggle_like_news(request, news_id):
 
 @api_view(['GET'])
 def fetch_news_by_slug(request, slug):
-    news = get_object_or_404(TaggedNews, raw_news__slug=slug)
-    serializer = TaggedNewsSerializer(news, many=False)
+    news = get_object_or_404(
+        TaggedNews.objects.select_related("raw_news", "news_type"),
+        raw_news__slug=slug
+    )
+    serializer = TaggedNewsSerializer(news)
     return Response({"success": True, "news": serializer.data})
+
+
+@api_view(['GET'])
+def fetch_news_meta_by_slug(request, slug):
+    news = get_object_or_404(
+        TaggedNews.objects.select_related("raw_news"),
+        raw_news__slug=slug
+    )
+    serializer = TaggedNewsMetaSerializer(news, context={"request": request})
+    return Response(serializer.data)
+
+
+def tagged_news_detail(request, slug):
+    news = get_object_or_404(
+        TaggedNews.objects.select_related("raw_news"),
+        raw_news__slug=slug
+    )
+    return render(request, "news/tagged_news_detail.html", {"news": news})

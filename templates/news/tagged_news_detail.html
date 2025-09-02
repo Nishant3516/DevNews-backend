@@ -1,0 +1,30 @@
+<head>
+  <title>{{ news.raw_news.title }}</title>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="{{ news.raw_news.title|escape }}" />
+  <meta
+    property="og:description"
+    content="{{ news.summary|default:news.raw_news.description|truncatechars:200|escape }}"
+  />
+  <meta property="og:url" content="{{ news.raw_news.get_app_url }}" />
+  {% if news.raw_news.img_url %}
+  <meta property="og:image" content="{{ news.raw_news.img_url }}" />
+  {% endif %}
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{ news.raw_news.title|escape }}" />
+  <meta
+    name="twitter:description"
+    content="{{ news.summary|default:news.raw_news.description|truncatechars:200|escape }}"
+  />
+  {% if news.raw_news.img_url %}
+  <meta name="twitter:image" content="{{ news.raw_news.img_url }}" />
+  {% endif %}
+</head>
+<body>
+  <h1>{{ news.raw_news.title }}</h1>
+  <p>{{ news.summary|default:news.raw_news.description }}</p>
+</body>

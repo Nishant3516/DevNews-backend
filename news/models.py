@@ -43,9 +43,6 @@ class RawNews(models.Model):
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
-    def get_app_url(self):
-        return f"https://myapp.com/news/{self.slug}/"
-
     def __str__(self):
         return self.title
 
