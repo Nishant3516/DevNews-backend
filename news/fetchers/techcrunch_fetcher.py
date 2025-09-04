@@ -2,7 +2,7 @@ import requests
 import datetime
 import feedparser
 from bs4 import BeautifulSoup
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from news.models import RawNews
 from news.management.sources.fetch_or_create_source import fetch_or_create_source
 
@@ -60,12 +60,23 @@ def fetch_techcrunch(feed_name="Apps", limit=10):
 
     for entry in entries:
         try:
+            source_news_id = entry.get("id") or entry.get(
+                "guid") or entry.get("link")
+
+            with transaction.atomic():
+                existing = RawNews.objects.filter(
+                    source_news_id=source_news_id, source=source
+                ).first()
+
+                if existing and existing.status == "processed":
+                    continue
+
             # Fetch full article text from link
             full_content, img_url = fetch_full_techcrunch_article(
                 entry.get("link", ""))
+
             RawNews.objects.update_or_create(
-                source_news_id=entry.get("id") or entry.get(
-                    "guid") or entry.get("link"),
+                source_news_id=source_news_id,
                 source=source,
                 defaults={
                     "title": entry.get("title", ""),

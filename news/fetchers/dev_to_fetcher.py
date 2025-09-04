@@ -4,6 +4,7 @@ from django.db import IntegrityError
 from news.models import RawNews
 from decouple import config
 from news.management.sources.fetch_or_create_source import fetch_or_create_source
+from django.db import transaction
 
 DEVTO_BASEURL = config("DEVTO_BASEURL", default="https://dev.to/api/")
 DEVTO_ARTICLES_URL = f"{DEVTO_BASEURL}articles"
@@ -55,25 +56,33 @@ def fetch_devto(limit=10):
             if not full_article:
                 continue
 
-            RawNews.objects.update_or_create(
-                source_news_id=str(article["id"]),
-                source=source,
-                defaults={
-                    "title": article.get("title", ""),
-                    "description": full_article.get("body_markdown") or article.get("description") or "",
-                    "url": article.get("url", ""),
-                    "source_url": f"{DEVTO_ARTICLES_URL}/{article['id']}",
-                    "published_at": datetime.datetime.fromisoformat(
-                        article.get("published_timestamp").replace(
-                            "Z", "+00:00")
-                    )
-                    if article.get("published_timestamp")
-                    else datetime.datetime.now(datetime.timezone.utc),
-                    "fetched_at": datetime.datetime.now(datetime.timezone.utc),
-                    "status": "raw",
-                    "img_url": article.get("cover_image", ""),
-                },
-            )
+            with transaction.atomic():
+                existing = RawNews.objects.filter(
+                    source_news_id=str(article["id"]), source=source
+                ).first()
+
+                if existing and existing.status == "processed":
+                    continue
+
+                RawNews.objects.update_or_create(
+                    source_news_id=str(article["id"]),
+                    source=source,
+                    defaults={
+                        "title": article.get("title", ""),
+                        "description": full_article.get("body_markdown") or article.get("description") or "",
+                        "url": article.get("url", ""),
+                        "source_url": f"{DEVTO_ARTICLES_URL}/{article['id']}",
+                        "published_at": datetime.datetime.fromisoformat(
+                            article.get("published_timestamp").replace(
+                                "Z", "+00:00")
+                        )
+                        if article.get("published_timestamp")
+                        else datetime.datetime.now(datetime.timezone.utc),
+                        "fetched_at": datetime.datetime.now(datetime.timezone.utc),
+                        "status": "raw",
+                        "img_url": article.get("cover_image", ""),
+                    },
+                )
 
         except IntegrityError as e:
             print(
